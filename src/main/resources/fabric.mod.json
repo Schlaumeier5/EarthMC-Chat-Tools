@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"id": "emc-chat-tools",
+	"version": "${version}",
+	"name": "EMC Chat Tools",
+	"description": "This is an example description! Tell everyone what your mod is about!",
+	"authors": [
+		"Me!"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/emc-chat-tools/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"de.schlaumeier.EMCChatTools"
+		],
+		"client": [
+			"de.schlaumeier.EMCChatToolsClient"
+		]
+	},
+	"mixins": [
+		"emc-chat-tools.mixins.json",
+		{
+			"config": "emc-chat-tools.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21.8",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
