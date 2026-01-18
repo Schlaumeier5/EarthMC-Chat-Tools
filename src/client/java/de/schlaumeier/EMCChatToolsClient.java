@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 
 import java.io.InputStream;
 import java.util.Collections;
@@ -16,6 +17,14 @@ import java.util.List;
 import java.util.Map;
 
 public class EMCChatToolsClient implements ClientModInitializer {
+    private static EMCChatToolsClient instance;
+    public static EMCChatToolsClient getInstance() {
+        return instance;
+    }
+    private final EMCChatSettings settings = new EMCChatSettings();
+    private String pendingIllegalMessage = null;
+    private String pendingIllegalLabel = null;
+    private boolean sendingUnsafe;
     private boolean loaded;
 
     private OrtEnvironment env;
@@ -40,6 +49,7 @@ public class EMCChatToolsClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        instance = this;
         env = OrtEnvironment.getEnvironment();
         ClientReceiveMessageEvents.GAME.register(this::onChatReceive);
         ClientSendMessageEvents.ALLOW_CHAT.register(this::onChatSend);
@@ -55,6 +65,15 @@ public class EMCChatToolsClient implements ClientModInitializer {
                     e.printStackTrace();
                 }
             }
+            if (pendingIllegalMessage != null) {
+                Minecraft.getInstance().execute(() -> {
+                    Minecraft.getInstance().setScreen(
+                        new IllegalMessageConfirmScreen(pendingIllegalLabel, pendingIllegalMessage)
+                    );
+                    pendingIllegalLabel = null;
+                    pendingIllegalMessage = null;
+                });
+            }
         });
     }
 
@@ -66,33 +85,62 @@ public class EMCChatToolsClient implements ClientModInitializer {
     }
 
     private boolean onChatSend(String message) {
-        classifyAndNotify(message, true);
+        try {
+            Prediction safety = predict(safetySession, SAFETY_LABELS, message);
+
+            if (!sendingUnsafe && !safety.label.equals("other_safe") && safety.score > SAFETY_THRESHOLD && settings.warnIllegal()) {
+                openIllegalConfirmDialog(safety.label, message);
+                return false;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return true;
     }
 
     /* ---------------- CLASSIFICATION ---------------- */
 
-    private void classifyAndNotify(String message, boolean outgoing) {
-        try {
-            Prediction safety = predict(safetySession, SAFETY_LABELS, message);
+private void classifyAndNotify(String message, boolean outgoing) {
+    try {
+        Prediction safety = predict(safetySession, SAFETY_LABELS, message);
 
-            System.out.println("Safety prediction: " + safety);
-
-            if (!safety.label.equals("other_safe") && safety.score > SAFETY_THRESHOLD) {
+        // Illegal/Bad Behavior
+        if (!safety.label.equals("other_safe") && safety.score > SAFETY_THRESHOLD) {
+            if (!settings.isHidden(safety.label)) {
                 notifyUser("SAFETY", safety);
-                return;
             }
 
-            Prediction community = predict(communitySession, COMMUNITY_LABELS, message);
+            if (settings.shouldPing(safety.label)) {
+                playPingSound();
+            }
 
-            if (!community.label.equals("other")) {
+            return;
+        }
+
+        Prediction community = predict(communitySession, COMMUNITY_LABELS, message);
+
+        // Community warnings (legal_ad, help_ask)
+        if (!community.label.equals("other")) {
+            if (!settings.isHidden(community.label)) {
                 notifyUser("COMMUNITY", community);
             }
-
-        } catch (Exception e) {
-            e.printStackTrace();
+            if (settings.shouldPing(community.label)) {
+                playPingSound();
+            }
         }
+
+        // Scammer check
+        for (String scammer : settings.getScammerPlayers()) {
+            if (message.toLowerCase().contains(scammer.toLowerCase())) {
+                notifyUser("SCAMMER", new Prediction("Scammer message detected", 1.0f));
+                playPingSound();
+            }
+        }
+
+    } catch (Exception e) {
+        e.printStackTrace();
     }
+}
 
     /* ---------------- ONNX ---------------- */
 
@@ -140,6 +188,24 @@ public class EMCChatToolsClient implements ClientModInitializer {
                 false
             );
         });
+    }
+    private void openIllegalConfirmDialog(String label, String message) {
+        pendingIllegalMessage = message;
+        pendingIllegalLabel = label;
+    }
+
+
+    private void playPingSound() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null) {
+            mc.player.playSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1.0f, 1.0f);
+        }
+    }
+
+    public void sendUnsafe(String message) {
+        sendingUnsafe = true;
+        Minecraft.getInstance().player.connection.sendChat(message);
+        sendingUnsafe = false;
     }
 
     private record Prediction(String label, float score) {}
