@@ -1,72 +1,106 @@
 package de.schlaumeier;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
+
+import de.schlaumeier.config.EMCChatConfig;
 
 public class EMCChatSettings {
-    // Labels, deren Nachrichten nicht angezeigt werden
-    private final Set<String> hiddenLabels = new HashSet<>();
+    private final EMCChatConfig config;
 
-    // Labels, deren Nachrichten einen Ton auslösen
-    private final Set<String> pingLabels = new HashSet<>();
-
-    // Spieler, die als Scammer markiert sind
-    private final Set<String> scammerPlayers = new HashSet<>();
-
-    // Toggle für illegale Nachrichtwarnungen
-    private boolean warnIllegal = true;
-
-    public EMCChatSettings() {
-        // Default: hide nothing, ping self_harm and explicit_bullying
-        pingLabels.add("self_harm");
-        pingLabels.add("explicit_bullying");
-    }
-
-    public void hideLabel(String label) {
-        hiddenLabels.add(label);
-    }
-
-    public void showLabel(String label) {
-        hiddenLabels.remove(label);
+    public EMCChatSettings(EMCChatConfig config) {
+        this.config = config;
     }
 
     public boolean isHidden(String label) {
-        return hiddenLabels.contains(label);
+        if (label.equals("explicit_bullying")) {
+            return config.hideExplicitBullying;
+        } else if (label.equals("self_harm")) {
+            return config.hideSelfHarm;
+        } else if (label.equals("explicit_sexual_talk")) {
+            return config.hideSexualContent;
+        } else if (label.equals("hate_speech")) {
+            return config.hideHateSpeech;
+        } else if (label.equals("help_ask")) {
+            return config.hideHelpAsks;
+        } else if (label.equals("legal_ad")) {
+            return config.hideLegalAds;
+        } else {
+            return false;
+        }
     }
-
-    public void addPingLabel(String label) {
-        pingLabels.add(label);
-    }
-
-    public void removePingLabel(String label) {
-        pingLabels.remove(label);
+    public boolean isHidden(String text, String label) {
+        if (config.hideScammerMessages) {
+            for (String scammer : getScammerPlayers()) {
+                if (text.contains(scammer + ": ") || text.contains(scammer + " -")) {
+                    return true;
+                }
+            }
+        }
+        return isHidden(label);
     }
 
     public boolean shouldPing(String label) {
-        return pingLabels.contains(label);
+        if (label.equals("explicit_bullying") || label.equals("self_harm")
+                || label.equals("explicit_sexual_talk") || label.equals("hate_speech")) {
+            return config.playPingOnSafety;
+        } else if (label == "help_ask") {
+            return config.playPingOnHelpAsk;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean shouldPing(String text, String label) {
+        if (label.equals("explicit_bullying") || label.equals("self_harm")
+                || label.equals("explicit_sexual_talk") || label.equals("hate_speech")) {
+            return config.playPingOnSafety;
+        } else if (label == "help_ask") {
+            return config.playPingOnHelpAsk;
+        } else if (label == "legal_ad" && config.playPingOnScammerAd) {
+            for (String scammer : getScammerPlayers()) {
+                if (text.contains(scammer + ": ") || text.contains(scammer + " -")) {
+                    return true;
+                }
+            }
+        } else if (config.playPingOnScammerMessage) {
+            for (String scammer : getScammerPlayers()) {
+                if (text.contains(scammer + " -")) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public void addScammer(String player) {
-        scammerPlayers.add(player);
+        config.scammerNames.add(player);
     }
 
     public void removeScammer(String player) {
-        scammerPlayers.remove(player);
+        config.scammerNames.remove(player);
     }
 
     public boolean isScammer(String player) {
-        return scammerPlayers.contains(player);
+        return config.scammerNames.contains(player);
     }
 
-    public Set<String> getScammerPlayers() {
-        return scammerPlayers;
+    public List<String> getScammerPlayers() {
+        return config.scammerNames;
     }
 
     public void setWarnIllegal(boolean warn) {
-        warnIllegal = warn;
+        config.enableSafetyWarnings = warn;
     }
 
     public boolean warnIllegal() {
-        return warnIllegal;
+        return config.enableSafetyWarnings;
+    }
+
+    public boolean displayAlerts() {
+        return config.displayAlerts;
+    }
+
+    public boolean displayScammerAlerts() {
+        return config.displayScammerAlerts;
     }
 }

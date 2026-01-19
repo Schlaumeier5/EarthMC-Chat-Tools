@@ -20,6 +20,9 @@
 		],
 		"client": [
 			"de.schlaumeier.EMCChatToolsClient"
+		],
+		"modmenu": [
+			"de.schlaumeier.EMCChatModMenu"
 		]
 	},
 	"mixins": [

@@ -1,27 +1,36 @@
 package de.schlaumeier;
 
 import ai.onnxruntime.*;
-
+import de.schlaumeier.config.EMCChatConfig;
+import me.shedaniel.autoconfig.AutoConfig;
+import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.ChatType;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.PlayerChatMessage;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import org.jetbrains.annotations.Nullable;
+
+import com.mojang.authlib.GameProfile;
 
 public class EMCChatToolsClient implements ClientModInitializer {
     private static EMCChatToolsClient instance;
     public static EMCChatToolsClient getInstance() {
         return instance;
     }
-    private final EMCChatSettings settings = new EMCChatSettings();
+    private EMCChatSettings settings;
     private String pendingIllegalMessage = null;
     private String pendingIllegalLabel = null;
     private boolean sendingUnsafe;
@@ -51,7 +60,7 @@ public class EMCChatToolsClient implements ClientModInitializer {
     public void onInitializeClient() {
         instance = this;
         env = OrtEnvironment.getEnvironment();
-        ClientReceiveMessageEvents.GAME.register(this::onChatReceive);
+        ClientReceiveMessageEvents.ALLOW_CHAT.register(this::onChatReceive);
         ClientSendMessageEvents.ALLOW_CHAT.register(this::onChatSend);
         
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -75,13 +84,15 @@ public class EMCChatToolsClient implements ClientModInitializer {
                 });
             }
         });
+        AutoConfig.register(EMCChatConfig.class, GsonConfigSerializer::new);
+        settings = new EMCChatSettings(AutoConfig.getConfigHolder(EMCChatConfig.class).getConfig());
     }
 
     /* ---------------- CHAT HOOKS ---------------- */
 
-    private void onChatReceive(Component message, boolean overlay) {
+    private boolean onChatReceive(Component message, @Nullable PlayerChatMessage signedMessage, @Nullable GameProfile sender, ChatType.Bound params, Instant receptionTimestamp) {
         String msg = message.getString();
-        classifyAndNotify(msg, false);
+        return classifyAndNotify(msg, false);
     }
 
     private boolean onChatSend(String message) {
@@ -100,12 +111,12 @@ public class EMCChatToolsClient implements ClientModInitializer {
 
     /* ---------------- CLASSIFICATION ---------------- */
 
-private void classifyAndNotify(String message, boolean outgoing) {
+private boolean classifyAndNotify(String message, boolean outgoing) {
     try {
         Prediction safety = predict(safetySession, SAFETY_LABELS, message);
 
         // Illegal/Bad Behavior
-        if (!safety.label.equals("other_safe") && safety.score > SAFETY_THRESHOLD) {
+        if (!safety.label.equals("other_safe") && safety.score > SAFETY_THRESHOLD && settings.displayAlerts()) {
             if (!settings.isHidden(safety.label)) {
                 notifyUser("SAFETY", safety);
             }
@@ -113,32 +124,36 @@ private void classifyAndNotify(String message, boolean outgoing) {
             if (settings.shouldPing(safety.label)) {
                 playPingSound();
             }
-
-            return;
         }
 
         Prediction community = predict(communitySession, COMMUNITY_LABELS, message);
 
         // Community warnings (legal_ad, help_ask)
-        if (!community.label.equals("other")) {
+        if (!community.label.equals("other") && settings.displayAlerts()) {
             if (!settings.isHidden(community.label)) {
                 notifyUser("COMMUNITY", community);
             }
-            if (settings.shouldPing(community.label)) {
+            if (settings.shouldPing(message, community.label)) {
                 playPingSound();
             }
+        }
+
+        if (settings.isHidden(message, safety.label) || settings.isHidden(message, community.label)) {
+            return false;
         }
 
         // Scammer check
-        for (String scammer : settings.getScammerPlayers()) {
-            if (message.toLowerCase().contains(scammer.toLowerCase())) {
-                notifyUser("SCAMMER", new Prediction("Scammer message detected", 1.0f));
-                playPingSound();
+        if (settings.displayScammerAlerts()) {
+            for (String scammer : settings.getScammerPlayers()) {
+                if (message.toLowerCase().contains(scammer.toLowerCase() + ": ") || message.toLowerCase().contains(scammer.toLowerCase() + " -")) {
+                    notifyUser("SCAMMER", new Prediction("Scammer message detected", 1.0f));
+                }
             }
         }
-
+        return true;
     } catch (Exception e) {
         e.printStackTrace();
+        return true;
     }
 }
 
