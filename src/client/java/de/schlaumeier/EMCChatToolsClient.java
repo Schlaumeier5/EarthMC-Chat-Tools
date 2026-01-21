@@ -92,7 +92,7 @@ public class EMCChatToolsClient implements ClientModInitializer {
 
     private boolean onChatReceive(Component message, @Nullable PlayerChatMessage signedMessage, @Nullable GameProfile sender, ChatType.Bound params, Instant receptionTimestamp) {
         String msg = message.getString();
-        return classifyAndNotify(msg, false);
+        return msg.length() < 7 || classifyAndNotify(msg, false);
     }
 
     private boolean onChatSend(String message) {
