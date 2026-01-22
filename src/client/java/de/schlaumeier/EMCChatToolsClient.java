@@ -41,6 +41,7 @@ public class EMCChatToolsClient implements ClientModInitializer {
     private OrtSession communitySession;
 
     private static final float SAFETY_THRESHOLD = 0.70f;
+    private static final float COMMUNITY_THRESHOLD = 0.70f;
 
     private static final Map<Integer, String> SAFETY_LABELS = Map.of(
         0, "other_safe",
@@ -129,7 +130,7 @@ private boolean classifyAndNotify(String message, boolean outgoing) {
         Prediction community = predict(communitySession, COMMUNITY_LABELS, message);
 
         // Community warnings (legal_ad, help_ask)
-        if (!community.label.equals("other") && settings.displayAlerts()) {
+        if (!community.label.equals("other") && community.score > COMMUNITY_THRESHOLD && settings.displayAlerts()) {
             if (!settings.isHidden(community.label)) {
                 notifyUser("COMMUNITY", community);
             }
