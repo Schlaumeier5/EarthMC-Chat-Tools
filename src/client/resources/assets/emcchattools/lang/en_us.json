@@ -1,0 +1,17 @@
+{
+    "text.autoconfig.emcchattools.option.enableSafetyWarnings": "Enable Safety Warnings (experimental)",
+    "text.autoconfig.emcchattools.option.playPingOnSafety": "Play a sound on Safety Warnings (not recommended)",
+    "text.autoconfig.emcchattools.option.playPingOnHelpAsk": "Play a sound if a player asks for help or asks a question",
+    "text.autoconfig.emcchattools.option.playPingOnScammerAd": "Play a sound if a scammer sends an ad in chat",
+    "text.autoconfig.emcchattools.option.playPingOnScammerMessage": "Play a sound if a scammer sends you a private message",
+    "text.autoconfig.emcchattools.option.hideExplicitBullying": "Hide Explicit Bullying (very strict, not recommended)",
+    "text.autoconfig.emcchattools.option.hideSexualContent": "Hide Sexual Content (experimental)",
+    "text.autoconfig.emcchattools.option.hideHateSpeech": "Hide Hate Speech (not working atm)",
+    "text.autoconfig.emcchattools.option.hideLegalAds": "Hide Ads",
+    "text.autoconfig.emcchattools.option.hideHelpAsks": "Hide player questions or requests for help",
+    "text.autoconfig.emcchattools.option.hideScammerMessages": "Hide Scammer Messages",
+    "text.autoconfig.emcchattools.option.safetyTreshold": "Safety Treshold",
+    "text.autoconfig.emcchattools.option.scammerNames": "Scammers",
+    "text.autoconfig.emcchattools.option.displayAlerts": "Display Alerts",
+    "text.autoconfig.emcchattools.option.displayScammerAlerts": "Display Scammer Alerts"
+}
