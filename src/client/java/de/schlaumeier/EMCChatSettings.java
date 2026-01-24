@@ -50,7 +50,7 @@ public class EMCChatSettings {
         }
     }
 
-    public boolean shouldPing(String username, String text, String label) {
+    public boolean shouldPing(String username, String text, String label, boolean isPrivate) {
         if (label.equals("explicit_bullying") || label.equals("self_harm")
                 || label.equals("explicit_sexual_talk") || label.equals("hate_speech")) {
             return config.playPingOnSafety;
@@ -62,12 +62,10 @@ public class EMCChatSettings {
                     return true;
                 }
             }
-        } else if (config.playPingOnScammerMessage) {
-            if (text.contains(" ->")) {
-                for (String scammer : getScammerPlayers()) {
-                    if (scammer != null && scammer.equals(username)) {
-                        return true;
-                    }
+        } else if (isPrivate && config.playPingOnScammerMessage) {
+            for (String scammer : getScammerPlayers()) {
+                if (scammer != null && scammer.equals(username)) {
+                    return true;
                 }
             }
         }

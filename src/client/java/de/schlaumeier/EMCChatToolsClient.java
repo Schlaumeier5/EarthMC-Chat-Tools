@@ -95,25 +95,47 @@ public class EMCChatToolsClient implements ClientModInitializer {
     private boolean onChatReceive(Component message, @Nullable PlayerChatMessage signedMessage, @Nullable GameProfile sender, ChatType.Bound params, Instant receptionTimestamp) {
         String msg = message.getString();
         if (msg.contains(":")) msg = msg.split(":", 2)[1];
-        System.out.println(msg + "(by" + sender + ")");
         String user;
+        boolean isPrivate = false;
         if (sender != null) {
             user = sender.getName();
-        } else if (message.getStyle().getHoverEvent().action() == HoverEvent.Action.SHOW_TEXT) {
-            String hoverText = ((HoverEvent.ShowText)message.getStyle().getHoverEvent()).value().getString();
-            if (hoverText.contains("Message sent by")) {
-                user = hoverText.substring(16).split(" ", 2)[0];
+        } else {
+            // Check hover events in this component and siblings
+            HoverEvent hoverEvent = findHoverEvent(message);
+            if (hoverEvent == null) hoverEvent = findHoverEvent(params.decorate(message));
+            if (hoverEvent == null) hoverEvent = findHoverEvent(params.decorateNarration(message));
+            if (hoverEvent != null && hoverEvent.action() == HoverEvent.Action.SHOW_TEXT) {
+                String hoverText = ((HoverEvent.ShowText)hoverEvent).value().getString();
+                if (hoverText.contains("Message sent by")) {
+                    user = hoverText.substring(16).split(" ", 2)[0];
+                } else {
+                    user = null;
+                }
+            } else if (msg.contains(" -> ") && msg.contains("]")) {
+                user = msg.substring(1).split(" \\->", 2)[0];
+                msg = msg.split("\\]", 2)[1];
+                isPrivate = true;
             } else {
                 user = null;
             }
-        } else if (msg.contains(" -> ") && msg.contains("]")) {
-            user = msg.substring(1).split(" \\->", 2)[0];
-            msg = msg.split("\\]", 2)[1];
-        } else {
-            user = null;
         }
         System.out.println("Chat: " + msg + "(by " + user + ")");
-        return msg.length() < 7 || classifyAndNotify(msg, user, false);
+        return msg.length() < 7 || classifyAndNotify(msg, user, false, isPrivate);
+    }
+
+    private @Nullable HoverEvent findHoverEvent(Component component) {
+        if (component.getStyle().getHoverEvent() != null) {
+            return component.getStyle().getHoverEvent();
+        }
+        for (Component sibling : component.getSiblings()) {
+            System.out.println("New sibling: " + sibling);
+            HoverEvent event = findHoverEvent(sibling);
+            if (event != null) {
+                System.out.println("Event!");
+                return event;
+            }
+        }
+        return null;
     }
 
     private boolean onChatSend(String message) {
@@ -132,7 +154,7 @@ public class EMCChatToolsClient implements ClientModInitializer {
 
     /* ---------------- CLASSIFICATION ---------------- */
 
-private boolean classifyAndNotify(String message, String player, boolean outgoing) {
+private boolean classifyAndNotify(String message, String player, boolean outgoing, boolean isPrivate) {
     try {
         Prediction safety = predict(safetySession, SAFETY_LABELS, message);
 
@@ -154,7 +176,7 @@ private boolean classifyAndNotify(String message, String player, boolean outgoin
             if (!settings.isHidden(community.label)) {
                 notifyUser("COMMUNITY", community);
             }
-            if (settings.shouldPing(player, message, community.label)) {
+            if (settings.shouldPing(player, message, community.label, isPrivate)) {
                 playPingSound();
             }
         }
