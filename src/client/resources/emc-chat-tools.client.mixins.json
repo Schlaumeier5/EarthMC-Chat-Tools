@@ -3,7 +3,7 @@
 	"package": "de.schlaumeier.mixin.client",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"ExampleClientMixin"
+		"ChatComponentMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
