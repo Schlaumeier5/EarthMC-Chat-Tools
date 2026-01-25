@@ -28,10 +28,10 @@ public class EMCChatSettings {
             return false;
         }
     }
-    public boolean isHidden(String text, String label) {
-        if (config.hideScammerMessages) {
+    public boolean isHidden(String user, String text, String label, boolean isPrivate) {
+        if (isPrivate && config.hideScammerMessages) {
             for (String scammer : getScammerPlayers()) {
-                if (text.contains(scammer + ": ") || text.contains(scammer + " -")) {
+                if (scammer.equals(user)) {
                     return true;
                 }
             }
@@ -43,7 +43,7 @@ public class EMCChatSettings {
         if (label.equals("explicit_bullying") || label.equals("self_harm")
                 || label.equals("explicit_sexual_talk") || label.equals("hate_speech")) {
             return config.playPingOnSafety;
-        } else if (label == "help_ask") {
+        } else if (label.equals("help_ask")) {
             return config.playPingOnHelpAsk;
         } else {
             return false;
@@ -54,9 +54,9 @@ public class EMCChatSettings {
         if (label.equals("explicit_bullying") || label.equals("self_harm")
                 || label.equals("explicit_sexual_talk") || label.equals("hate_speech")) {
             return config.playPingOnSafety;
-        } else if (label == "help_ask") {
+        } else if (label.equals("help_ask")) {
             return config.playPingOnHelpAsk;
-        } else if (label == "legal_ad" && config.playPingOnScammerAd) {
+        } else if (label.equals("legal_ad") && config.playPingOnScammerAd) {
             for (String scammer : getScammerPlayers()) {
                 if (scammer != null && scammer.equals(username)) {
                     return true;

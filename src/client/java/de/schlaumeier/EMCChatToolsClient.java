@@ -127,19 +127,19 @@ private boolean classifyAndNotify(String message, String player, boolean outgoin
             if (!settings.isHidden(community.label)) {
                 notifyUser("COMMUNITY", community);
             }
-            if (settings.shouldPing(player, message, community.label, isPrivate)) {
-                playPingSound();
-            }
+        }
+        if (settings.shouldPing(player, message, community.label, isPrivate)) {
+            playPingSound();
         }
 
-        if (settings.isHidden(message, safety.label) || settings.isHidden(message, community.label)) {
+        if (settings.isHidden(player, message, safety.label, isPrivate) || settings.isHidden(player, message, community.label, isPrivate)) {
             return false;
         }
 
         // Scammer check
         if (settings.displayScammerAlerts()) {
             for (String scammer : settings.getScammerPlayers()) {
-                if (message.toLowerCase().contains(scammer.toLowerCase() + ": ") || message.toLowerCase().contains(scammer.toLowerCase() + " -")) {
+                if (scammer.equals(player)) {
                     notifyUser("SCAMMER", new Prediction("Scammer message detected", 1.0f));
                 }
             }

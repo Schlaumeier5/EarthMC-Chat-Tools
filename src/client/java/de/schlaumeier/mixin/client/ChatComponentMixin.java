@@ -50,7 +50,12 @@ public class ChatComponentMixin {
         boolean isPrivate = false;
         if (message.contains(" -> ") && message.contains("[") && message.contains("me]")) {
             username = message.substring(1).split(" \\->", 2)[0];
+            if (username.contains(":")) { // Timestamp, added by some mods
+                message = message.split("\\]", 2)[1].substring(1);
+                username = message.substring(1).split(" \\->", 2)[0];
+            }
             isPrivate = true;
+            System.out.println("Private message!");
         } else {
             Optional<String> maybeUsername = extractUsername(content);
             if (maybeUsername.isEmpty()) username = null;
@@ -63,10 +68,6 @@ public class ChatComponentMixin {
             chat = "discord";
         } else if (message.startsWith("[")) {
             chat = message.substring(1).split("\\]", 2)[0].toLowerCase();
-            if (chat.contains(":")) { // Timestamp, added by some mods
-                message = message.split("\\]", 2)[1].substring(1);
-                chat = message.substring(1).split("\\]", 2)[0].toLowerCase();
-            }
             if (message.startsWith("(Filtered) ")) {
                 message = message.substring(11);
                 chat = message.substring(1).split("\\]", 2)[0].toLowerCase();
@@ -84,8 +85,9 @@ public class ChatComponentMixin {
             return;
         }
         message = message.split("\\]", 2)[1];
-        if (!message.contains(": ") || (username == null && chat != "discord" && chat != "staff-discord")) return;
-        message = message.split(": ", 2)[1];
+        if ((!message.contains(": ") && chat != "private") || (username == null && chat != "discord" && chat != "staff-discord")) return;
+        if (message.contains(":")) message = message.split(": ", 2)[1];
+        else message = message.substring(1);
         chat = chat.replace(" ", "-");
         if (!EMCChatToolsClient.getInstance().onChatReceive(message, username, chat, isPrivate)) {
             ci.cancel();
