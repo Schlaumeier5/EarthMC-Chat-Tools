@@ -6,25 +6,18 @@ import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.ChatType;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.PlayerChatMessage;
-import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 
 import java.io.InputStream;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
-
-import com.mojang.authlib.GameProfile;
 
 public class EMCChatToolsClient implements ClientModInitializer {
     private static EMCChatToolsClient instance;
@@ -62,7 +55,7 @@ public class EMCChatToolsClient implements ClientModInitializer {
     public void onInitializeClient() {
         instance = this;
         env = OrtEnvironment.getEnvironment();
-        ClientReceiveMessageEvents.ALLOW_CHAT.register(this::onChatReceive);
+        //ClientReceiveMessageEvents.ALLOW_CHAT.register(this::onChatReceive);
         ClientSendMessageEvents.ALLOW_CHAT.register(this::onChatSend);
         
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -92,50 +85,8 @@ public class EMCChatToolsClient implements ClientModInitializer {
 
     /* ---------------- CHAT HOOKS ---------------- */
 
-    private boolean onChatReceive(Component message, @Nullable PlayerChatMessage signedMessage, @Nullable GameProfile sender, ChatType.Bound params, Instant receptionTimestamp) {
-        String msg = message.getString();
-        if (msg.contains(":")) msg = msg.split(":", 2)[1];
-        String user;
-        boolean isPrivate = false;
-        if (sender != null) {
-            user = sender.getName();
-        } else {
-            // Check hover events in this component and siblings
-            HoverEvent hoverEvent = findHoverEvent(message);
-            if (hoverEvent == null) hoverEvent = findHoverEvent(params.decorate(message));
-            if (hoverEvent == null) hoverEvent = findHoverEvent(params.decorateNarration(message));
-            if (hoverEvent != null && hoverEvent.action() == HoverEvent.Action.SHOW_TEXT) {
-                String hoverText = ((HoverEvent.ShowText)hoverEvent).value().getString();
-                if (hoverText.contains("Message sent by")) {
-                    user = hoverText.substring(16).split(" ", 2)[0];
-                } else {
-                    user = null;
-                }
-            } else if (msg.contains(" -> ") && msg.contains("]")) {
-                user = msg.substring(1).split(" \\->", 2)[0];
-                msg = msg.split("\\]", 2)[1];
-                isPrivate = true;
-            } else {
-                user = null;
-            }
-        }
-        System.out.println("Chat: " + msg + "(by " + user + ")");
-        return msg.length() < 7 || classifyAndNotify(msg, user, false, isPrivate);
-    }
-
-    private @Nullable HoverEvent findHoverEvent(Component component) {
-        if (component.getStyle().getHoverEvent() != null) {
-            return component.getStyle().getHoverEvent();
-        }
-        for (Component sibling : component.getSiblings()) {
-            System.out.println("New sibling: " + sibling);
-            HoverEvent event = findHoverEvent(sibling);
-            if (event != null) {
-                System.out.println("Event!");
-                return event;
-            }
-        }
-        return null;
+    public boolean onChatReceive(String message, @Nullable String sender, String chat, boolean isPrivate) {
+        return message.length() < 7 || classifyAndNotify(message, sender, false, isPrivate);
     }
 
     private boolean onChatSend(String message) {
