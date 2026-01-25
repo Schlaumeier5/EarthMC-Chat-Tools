@@ -9,6 +9,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 
@@ -133,6 +135,7 @@ private boolean classifyAndNotify(String message, String player, boolean outgoin
         }
 
         if (settings.isHidden(player, message, safety.label, isPrivate) || settings.isHidden(player, message, community.label, isPrivate)) {
+            sendBlockedMessage(player + ": " + message + " §c(" + safety.label + ", " + community.label + ")");
             return false;
         }
 
@@ -185,6 +188,13 @@ private boolean classifyAndNotify(String message, String player, boolean outgoin
         byte[] bytes = is.readAllBytes();
 
         return env.createSession(bytes);
+    }
+
+    private void sendBlockedMessage(String blocked) {
+        Minecraft.getInstance().execute(() -> {
+            Minecraft.getInstance().player.displayClientMessage(
+                Component.literal("§7§oBlocked message. Hover to see content").withStyle(Style.EMPTY.withHoverEvent(new HoverEvent.ShowText(Component.literal(blocked)))), false);
+        });
     }
 
     private void notifyUser(String type, Prediction p) {
