@@ -9,7 +9,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import de.schlaumeier.EMCChatToolsClient;
+import de.schlaumeier.JoinTracker;
 import net.minecraft.client.GuiMessageTag;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -44,7 +46,15 @@ public class ChatComponentMixin {
         cancellable = true
     )
     private void emcchattools$onAddMessage(Component content, @Nullable MessageSignature messageSignature, @Nullable GuiMessageTag messageTag, CallbackInfo ci) {
+        // Do not trigger when the client joined less than 5 seconds ago
+        if (Minecraft.getInstance().player == null || System.currentTimeMillis() - JoinTracker.joinTime < 5000) {
+            return;
+        }
         String message = content.getString();
+        if (message.contains("voted and received a gold crate /vote") && !EMCChatToolsClient.getInstance().getSettings().displayVoteMessages()) {
+            ci.cancel();
+            return;
+        }
         String username;
         String chat = null;
         boolean isPrivate = false;

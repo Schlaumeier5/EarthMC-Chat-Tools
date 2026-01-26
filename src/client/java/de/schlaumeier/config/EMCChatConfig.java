@@ -24,6 +24,8 @@ public class EMCChatConfig implements ConfigData {
 
     public boolean hideScammerMessages = false;
 
+    public boolean hidePlayerVotes = false;
+
     public float safetyThreshold = 0.70f;
 
     public List<String> scammerNames = new ArrayList<>();
