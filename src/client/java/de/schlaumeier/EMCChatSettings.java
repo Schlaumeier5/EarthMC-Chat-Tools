@@ -103,4 +103,8 @@ public class EMCChatSettings {
     public boolean displayScammerAlerts() {
         return config.displayScammerAlerts;
     }
+
+    public boolean displayVoteMessages() {
+        return !config.hidePlayerVotes;
+    }
 }

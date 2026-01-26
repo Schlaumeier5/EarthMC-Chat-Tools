@@ -13,5 +13,6 @@
     "text.autoconfig.emcchattools.option.safetyTreshold": "Safety Treshold",
     "text.autoconfig.emcchattools.option.scammerNames": "Scammers",
     "text.autoconfig.emcchattools.option.displayAlerts": "Display Alerts",
-    "text.autoconfig.emcchattools.option.displayScammerAlerts": "Display Scammer Alerts"
+    "text.autoconfig.emcchattools.option.displayScammerAlerts": "Display Scammer Alerts",
+    "text.autoconfig.emcchattools.option.hidePlayerVotes": "Hide Vote Messages"
 }
