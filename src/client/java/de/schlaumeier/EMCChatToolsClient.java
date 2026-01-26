@@ -107,52 +107,52 @@ public class EMCChatToolsClient implements ClientModInitializer {
 
     /* ---------------- CLASSIFICATION ---------------- */
 
-private boolean classifyAndNotify(String message, String player, boolean outgoing, boolean isPrivate) {
-    try {
-        Prediction safety = predict(safetySession, SAFETY_LABELS, message);
+    private boolean classifyAndNotify(String message, String player, boolean outgoing, boolean isPrivate) {
+        try {
+            Prediction safety = predict(safetySession, SAFETY_LABELS, message);
 
-        // Illegal/Bad Behavior
-        if (!safety.label.equals("other_safe") && safety.score > SAFETY_THRESHOLD && settings.displayAlerts()) {
-            if (!settings.isHidden(safety.label)) {
-                notifyUser("SAFETY", safety);
-            }
+            // Illegal/Bad Behavior
+            if (!safety.label.equals("other_safe") && safety.score > SAFETY_THRESHOLD && settings.displayAlerts()) {
+                if (!settings.isHidden(safety.label)) {
+                    notifyUser("SAFETY", safety);
+                }
 
-            if (settings.shouldPing(safety.label)) {
-                playPingSound();
-            }
-        }
-
-        Prediction community = predict(communitySession, COMMUNITY_LABELS, message);
-
-        // Community warnings (legal_ad, help_ask)
-        if (!community.label.equals("other") && community.score > COMMUNITY_THRESHOLD && settings.displayAlerts()) {
-            if (!settings.isHidden(community.label)) {
-                notifyUser("COMMUNITY", community);
-            }
-        }
-        if (settings.shouldPing(player, message, community.label, isPrivate)) {
-            playPingSound();
-        }
-
-        if (settings.isHidden(player, message, safety.label, isPrivate) || settings.isHidden(player, message, community.label, isPrivate)) {
-            sendBlockedMessage(player + ": " + message + " §c(" + safety.label + ", " + community.label + ")");
-            return false;
-        }
-
-        // Scammer check
-        if (settings.displayScammerAlerts()) {
-            for (String scammer : settings.getScammerPlayers()) {
-                if (scammer.equals(player)) {
-                    notifyUser("SCAMMER", new Prediction("Scammer message detected", 1.0f));
+                if (settings.shouldPing(safety.label)) {
+                    playPingSound();
                 }
             }
+
+            Prediction community = predict(communitySession, COMMUNITY_LABELS, message);
+
+            // Community warnings (legal_ad, help_ask)
+            if (!community.label.equals("other") && community.score > COMMUNITY_THRESHOLD && settings.displayAlerts()) {
+                if (!settings.isHidden(community.label)) {
+                    notifyUser("COMMUNITY", community);
+                }
+            }
+            if (settings.shouldPing(player, message, community.label, isPrivate)) {
+                playPingSound();
+            }
+
+            if (settings.isHidden(player, message, safety.label, isPrivate) || settings.isHidden(player, message, community.label, isPrivate)) {
+                sendBlockedMessage(player + ": " + message + " §c(" + safety.label + ", " + community.label + ")");
+                return false;
+            }
+
+            // Scammer check
+            if (settings.displayScammerAlerts()) {
+                for (String scammer : settings.getScammerPlayers()) {
+                    if (scammer.equals(player)) {
+                        notifyUser("SCAMMER", new Prediction("Scammer message detected", 1.0f));
+                    }
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return true;
         }
-        return true;
-    } catch (Exception e) {
-        e.printStackTrace();
-        return true;
     }
-}
 
     /* ---------------- ONNX ---------------- */
 
