@@ -68,6 +68,10 @@ public class ChatComponentMixin {
             chat = "discord";
         } else if (message.startsWith("[")) {
             chat = message.substring(1).split("\\]", 2)[0].toLowerCase();
+            if (chat.contains(":")) { // Timestamp, added by some mods
+                message = message.split("\\]", 2)[1].substring(1);
+                chat = message.substring(1).split(" \\]", 2)[0];
+            }
             if (message.startsWith("(Filtered) ")) {
                 message = message.substring(11);
                 chat = message.substring(1).split("\\]", 2)[0].toLowerCase();
@@ -84,6 +88,7 @@ public class ChatComponentMixin {
         } else {
             return;
         }
+        if (!message.contains("]")) return;
         message = message.split("\\]", 2)[1];
         if ((!message.contains(": ") && chat != "private") || (username == null && chat != "discord" && chat != "staff-discord")) return;
         if (message.contains(":")) message = message.split(": ", 2)[1];

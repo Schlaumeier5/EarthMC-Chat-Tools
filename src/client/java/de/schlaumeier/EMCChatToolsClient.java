@@ -27,6 +27,9 @@ public class EMCChatToolsClient implements ClientModInitializer {
         return instance;
     }
     private EMCChatSettings settings;
+    public EMCChatSettings getSettings() {
+        return settings;
+    }
     private String pendingIllegalMessage = null;
     private String pendingIllegalLabel = null;
     private boolean sendingUnsafe;
@@ -192,6 +195,7 @@ public class EMCChatToolsClient implements ClientModInitializer {
 
     private void sendBlockedMessage(String blocked) {
         Minecraft.getInstance().execute(() -> {
+            if (Minecraft.getInstance().player == null) return;
             Minecraft.getInstance().player.displayClientMessage(
                 Component.literal("§7§oBlocked message. Hover to see content").withStyle(Style.EMPTY.withHoverEvent(new HoverEvent.ShowText(Component.literal(blocked)))), false);
         });
