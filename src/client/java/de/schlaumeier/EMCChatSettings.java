@@ -107,4 +107,7 @@ public class EMCChatSettings {
     public boolean displayVoteMessages() {
         return !config.hidePlayerVotes;
     }
+    public boolean displayDeathMessages() {
+        return !config.hideDeathMessages;
+    }
 }

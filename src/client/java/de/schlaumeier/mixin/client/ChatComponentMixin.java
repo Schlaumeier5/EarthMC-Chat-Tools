@@ -51,7 +51,7 @@ public class ChatComponentMixin {
             return;
         }
         String message = content.getString();
-        if (message.contains("voted and received a gold crate /vote") && !EMCChatToolsClient.getInstance().getSettings().displayVoteMessages()) {
+        if ((message.contains("voted and received a gold crate /vote") && !EMCChatToolsClient.getInstance().getSettings().displayVoteMessages()) || (message.contains("☠") && message.contains("was killed by") && !EMCChatToolsClient.getInstance().getSettings().displayDeathMessages())) {
             ci.cancel();
             return;
         }
